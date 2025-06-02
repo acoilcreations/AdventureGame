@@ -1,0 +1,195 @@
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+import math
+
+
+@dataclass
+class Character:
+    hp: int
+    gender: str
+    inventory: list[str]
+    
+@dataclass 
+class Effect(ABC):
+    @abstractmethod
+    def apply(selfa, character: Character):
+        ...
+ 
+@dataclass   
+class Requirement(ABC):
+  @abstractmethod 
+  def check(self, character:Character)-> bool:
+    ...
+
+@dataclass 
+class Scene:
+    description: str
+    options: dict[str, list[Requirement]]
+    option_to_scene : dict[str,str]
+    effects:list[Effect]
+
+@dataclass
+class HPatleast:
+  required_hp: int
+
+  def check(self, character:Character)-> bool:
+      return self.required_hp >= character.hp
+
+@dataclass
+class HpAtMost:
+  required_hp: int
+
+  def check(self, character:Character)-> bool:
+      return self.required_hp <= character.hp
+
+@dataclass
+class Inventory:
+  required_item: str
+
+  def check(self, character:Character)-> bool:
+      return self.required_item== character.inventory
+@dataclass
+class Gender:
+  required_gender: int
+
+  def check(self, character:Character)-> bool:
+      return self.required_gender== character.gender
+
+@dataclass
+class SetGender(Effect):
+    new_gender: str
+
+    def apply(self, character: Character):
+        character.gender = self.new_gender 
+@dataclass
+class SetHp(Effect):
+    new_hp: int
+    
+    def apply(self, character: Character):
+        character.hp += self.new_hp
+@dataclass
+class Additem(Effect):
+    item_added:str
+    
+    def apply (self, character: Character):
+        character.inventory.append(self.item_added)
+        
+@dataclass
+class Removeitem(Effect):
+    item_removed:str
+    
+    def apply (self, character: Character):
+        character.inventory.remove(self.item_removed)
+
+
+scenes = {
+    "intro": Scene(
+        description="".join([
+            "Your story takes place in a lucious cloud floating above the horizon,",
+            " littered with rainbows and unicorns. You are awoken from your deep",
+            " slumber and you sleepily walk over to your mirror. Your reflection is",
+            " seen as...",
+        ]),
+        options= { "(Option 1) You're a beautiful maiden": [], "\n(Option 2) You're a knight in shinning armor": [] },
+        option_to_scene={"1":"girl", "2":"boy"},
+        effects= []
+    ),
+    "girl" :Scene(
+        description="".join([
+            "You look at yourself in the mirror as you hear ur maid walk into your",
+            " room with a list of options for breakfast. The list has two",
+            " choices...",
+        ]),
+        options="".join([
+            "(Option 1) A berry smoothie with toppings of mango",
+            " and banana chunks, with a side of toast and bright sunny side up",
+            " eggs or",
+            "\n(Option 2) A ROCK COLD PEICE OF ICE",
+        ]),
+        option_to_scene={"1":"smoothie", "2":"ice"},
+        effects = [SetGender("Female"), Additem("bag")]
+    ),
+    "boy":Scene(
+        description="".join([
+            "You look at ur handsome self in the mirror and realize you need to",
+            " brush your teeth. You can either...", 
+        ]),
+        options={
+            " (Option 1) Brush your teeth and raise ur chances of getting a girl" :[], " \n(Option 2) Be a wild BEAST and keep it natural":[]}, 
+        option_to_scene={"1":"brush", "2":"nobrush"},
+        effects = [SetGender("male"),SetHp(10), Additem("sword")]
+        ),
+    "smoothie" :Scene(
+        description="".join([
+            "You take a sip of your smoothie and its super yummy. You head",
+            " downstairs to try on your outfit for the day. Your choices today",
+            " are...",
+        ]),
+        options="".join([
+            "(Option 1) A yellow sun-dress with white flats or",
+            "\n(Option 2) A RAG",
+        ]),
+        option_to_scene={"1":"sunnyday", "2":"cloudyday"},
+        effects = [SetHp(50), Additem("smoothie")]
+    ),
+    "ice" :Scene(
+        description="".join([
+            "You eat your ice feeling hungry for real food and you hear a crash",
+            " outside your window. YOUR BEING ATTACKED! What will you",
+            " do?...",
+        ]),
+        options={ "(Option 1) Grab your sword! ": [], "\n(Option 2) Let the men do it.":[]},
+
+        option_to_scene={"1":"fight", "2":"dying"},
+        effects= []
+    ),
+    "brush" :Scene(
+        description="".join([
+            "You head into your bathroom to brush then you see something",
+            " floating in the sink. It floats to the surface and you see",
+            " ....",
+        ]),
+        options={ "(Option 1) A pair of eyes bloodshot undder the water":[],"\n(Option 2) A kitty!":[]},
+        option_to_scene={"1":"eyes", "2":"meowmeowmeow"},
+        effects = []
+    ),
+    "nobrush" :Scene(
+        description="".join([
+            "You go outside with your smelly breath and see a maiden in",
+            " the courtyard. You can either choose to...",
+        ]),
+        options={ "(Option 1) Talk to her like the rizz master you are":[], "\n(Option 2) Be a pussy and avoid her": []},
+        option_to_scene={"1":"rizzler", "2":"loser"},
+        effects = []
+    )
+}
+
+print ("Welcome to my fun choose your own adventure game! ")
+print ("If you ever want to quit type STOP")
+player_character= Character( hp= 100, gender= 'male', inventory= []) 
+current_scene = "intro"
+while True: 
+    print (scenes[current_scene].description)
+    for options_name, requirements in scenes[current_scene].options.items():
+        if all([req.check() for req in requirements]):
+            print (options_name) 
+    answer= input ("your choice is \n ")
+    if answer == "STOP":
+            break
+    current_scene= scenes[current_scene].option_to_scene[answer]
+    for effect in scenes[current_scene].effects:
+        effect.apply(player_character)
+        print (player_character)
+        if player_character.hp<0:
+                print("You're dead! Restart")
+                break
+
+
+
+
+
+
+
+
+
+
